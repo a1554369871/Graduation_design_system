@@ -4,7 +4,7 @@ from datetime import timedelta
 class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',
-        'mysql+pymysql://root:%40Sbz8863564,.@localhost:3306/Graduation_Design_System'
+        'mysql+pymysql://root:060623hya@localhost:3306/graduation_design_system'
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'graduation-design-system-secret-key-2025')
