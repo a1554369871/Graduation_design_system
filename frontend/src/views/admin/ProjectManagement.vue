@@ -81,7 +81,7 @@ const teacherList = ref([]); const studentList = ref([]); const statusDefs = ref
 const formVisible = ref(false); const isEdit = ref(false); const submitLoading = ref(false)
 const formRef = ref(null); const interactionVisible = ref(false); const interactions = ref([])
 
-const query = reactive({ keyword: '', status_id: '', page: 1, per_page: 20 })
+const query = reactive({ keyword: '', status_id: '', page: 1, per_page: 10 })
 const form = reactive({ student_id: '', title: '', graduation_year_id: '', advisor_id: '', reviewer_id: '', current_status_id: 1, description: '', max_submissions: 5 })
 const formRules = { student_id: [{ required: true, message: '必选' }], title: [{ required: true, message: '必填' }], graduation_year_id: [{ required: true, message: '必选' }], advisor_id: [{ required: true, message: '必选' }] }
 

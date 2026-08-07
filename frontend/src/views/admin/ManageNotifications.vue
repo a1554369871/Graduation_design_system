@@ -99,7 +99,7 @@ import {
 const notifications = ref([])
 const loading = ref(false)
 const page = ref(1)
-const perPage = ref(20)
+const perPage = ref(10)
 const total = ref(0)
 const saving = ref(false)
 

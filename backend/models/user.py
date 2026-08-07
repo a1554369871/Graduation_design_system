@@ -15,10 +15,10 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 
-    student = db.relationship('Student', backref='user', uselist=False, lazy=True)
-    teacher = db.relationship('Teacher', backref='user', uselist=False, lazy=True)
-    admin = db.relationship('Admin', backref='user', uselist=False, lazy=True)
-    logs = db.relationship('SystemLog', backref='user', lazy=True)
+    student = db.relationship('Student', backref='user', uselist=False, lazy=True, passive_deletes=True)
+    teacher = db.relationship('Teacher', backref='user', uselist=False, lazy=True, passive_deletes=True)
+    admin = db.relationship('Admin', backref='user', uselist=False, lazy=True, passive_deletes=True)
+    logs = db.relationship('SystemLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

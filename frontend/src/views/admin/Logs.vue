@@ -11,7 +11,7 @@
       <el-table-column prop="ip_address" label="IP" width="130" />
       <el-table-column prop="created_at" label="时间" width="170" />
     </el-table>
-    <el-pagination v-if="total > 0" background layout="prev,pager,next,total" :total="total" :current-page="page" :page-size="20" @current-change="p => { page = p; fetch() }" style="margin-top:16px;justify-content:center" />
+    <el-pagination v-if="total > 0" background layout="prev,pager,next,total" :total="total" :current-page="page" :page-size="10" @current-change="p => { page = p; fetch() }" style="margin-top:16px;justify-content:center" />
   </el-card>
 </template>
 
@@ -23,7 +23,7 @@ const list = ref([]); const total = ref(0); const page = ref(1); const loading =
 
 async function fetch() {
   loading.value = true
-  try { const res = await getLogs({ page: page.value, per_page: 20 }); list.value = res.items; total.value = res.total } finally { loading.value = false }
+  try { const res = await getLogs({ page: page.value, per_page: 10 }); list.value = res.items; total.value = res.total } finally { loading.value = false }
 }
 onMounted(fetch)
 </script>

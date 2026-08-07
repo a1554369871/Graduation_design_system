@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy.exc import IntegrityError
 from extensions import db
 from models.user import User, Student, Teacher, Admin
 from models.project import GraduationYear, GraduationStatusDef, Project, ProjectStatusHistory
 from models.submission import Submission
 from models.review import Review
 from models.system import ExportLog, SystemLog
+from models.topic import Topic, TopicSelection
 from utils.decorators import role_required
 from utils.helpers import log_system
 
@@ -26,7 +28,7 @@ def list_users():
     role = request.args.get('role')
     keyword = request.args.get('keyword')
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
 
     query = User.query
     if role:
@@ -36,7 +38,7 @@ def list_users():
             db.or_(User.name.like(f'%{keyword}%'), User.username.like(f'%{keyword}%'))
         )
 
-    pagination = query.order_by(User.created_at.desc()).paginate(
+    pagination = query.order_by(User.id.asc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
 
@@ -55,6 +57,7 @@ def list_users():
             a = Admin.query.filter_by(user_id=u.id).first()
             if a:
                 info.update(a.to_dict())
+        info['id'] = u.id
         result.append(info)
 
     return jsonify({
@@ -83,6 +86,7 @@ def get_user(user_id):
         a = Admin.query.filter_by(user_id=user.id).first()
         if a:
             info.update(a.to_dict())
+    info['id'] = user.id
     return jsonify(info), 200
 
 
@@ -90,8 +94,17 @@ def get_user(user_id):
 @jwt_required()
 @role_required('admin')
 def create_user():
-    data = request.get_json()
+    data = request.get_json() or {}
     role = data.get('role')
+
+    if not data.get('username') or not data.get('name'):
+        return jsonify({'msg': '用户名和姓名不能为空'}), 400
+    if role not in ('student', 'teacher', 'admin'):
+        return jsonify({'msg': '角色不合法'}), 400
+    if role == 'student' and not data.get('student_id'):
+        return jsonify({'msg': '请填写学号'}), 400
+    if role == 'teacher' and not data.get('teacher_id'):
+        return jsonify({'msg': '请填写工号'}), 400
 
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'msg': '用户名已存在'}), 400
@@ -155,18 +168,24 @@ def update_user(user_id):
     if user.role == 'student':
         s = Student.query.filter_by(user_id=user.id).first()
         if s:
+            if 'name' in data:
+                s.name = data['name']
             for field in ['class_name', 'major', 'department', 'phone', 'email']:
                 if field in data:
                     setattr(s, field, data[field])
     elif user.role == 'teacher':
         t = Teacher.query.filter_by(user_id=user.id).first()
         if t:
+            if 'name' in data:
+                t.name = data['name']
             for field in ['department', 'title', 'phone', 'email']:
                 if field in data:
                     setattr(t, field, data[field])
     elif user.role == 'admin':
         a = Admin.query.filter_by(user_id=user.id).first()
         if a:
+            if 'name' in data:
+                a.name = data['name']
             for field in ['phone', 'email']:
                 if field in data:
                     setattr(a, field, data[field])
@@ -184,8 +203,37 @@ def update_user(user_id):
 @role_required('admin')
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
-    db.session.delete(user)
-    db.session.commit()
+
+    if user.role == 'student':
+        student = Student.query.filter_by(user_id=user.id).first()
+        if student:
+            if Project.query.filter_by(student_id=student.id).first():
+                return jsonify({'msg': '该学生存在毕设项目，无法删除'}), 400
+            if TopicSelection.query.filter_by(student_id=student.id).first():
+                return jsonify({'msg': '该学生存在选题记录，无法删除'}), 400
+    elif user.role == 'teacher':
+        teacher = Teacher.query.filter_by(user_id=user.id).first()
+        if teacher:
+            if Topic.query.filter_by(teacher_id=teacher.id).first():
+                return jsonify({'msg': '该教师存在发布的选题，无法删除'}), 400
+            if Project.query.filter_by(advisor_id=teacher.id).first():
+                return jsonify({'msg': '该教师存在指导的项目，无法删除'}), 400
+            if Project.query.filter_by(reviewer_id=teacher.id).first():
+                return jsonify({'msg': '该教师存在评阅的项目，无法删除'}), 400
+            if Review.query.filter_by(reviewer_id=teacher.id).first():
+                return jsonify({'msg': '该教师存在评审记录，无法删除'}), 400
+    elif user.role == 'admin':
+        admin = Admin.query.filter_by(user_id=user.id).first()
+        if admin:
+            if ExportLog.query.filter_by(admin_id=admin.id).first():
+                return jsonify({'msg': '该管理员存在导出记录，无法删除'}), 400
+
+    try:
+        db.session.delete(user)
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'msg': '该用户存在关联数据，无法删除'}), 400
     log_system(get_jwt_identity(), 'delete_user', 'user', user_id)
     return jsonify({'msg': '删除成功'}), 200
 
@@ -197,7 +245,7 @@ def delete_user(user_id):
 @role_required('admin')
 def list_assignments():
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
     teacher_id = request.args.get('teacher_id', type=int)
 
     query = Project.query
@@ -528,7 +576,7 @@ def export_thesis_materials():
 @role_required('admin')
 def list_logs():
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
 
     pagination = SystemLog.query.order_by(SystemLog.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
@@ -580,7 +628,7 @@ def dashboard():
 @role_required('admin')
 def list_projects():
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
     status_id = request.args.get('status_id', type=int)
     keyword = request.args.get('keyword')
 

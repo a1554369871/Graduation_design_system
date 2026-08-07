@@ -49,7 +49,7 @@ import { getAssignments, assignAdvisor as apiAssignAdvisor, assignReviewer as ap
 const list = ref([]); const total = ref(0); const loading = ref(false)
 const teacherList = ref([]); const dialogVisible = ref(false); const submitLoading = ref(false)
 const selectedTeacherId = ref(null); const currentRow = ref(null); const assignType = ref('advisor')
-const query = reactive({ teacher_id: '', page: 1, per_page: 20 })
+const query = reactive({ teacher_id: '', page: 1, per_page: 10 })
 const assignTitle = computed(() => assignType.value === 'advisor' ? '分配指导教师' : '分配评阅教师')
 
 async function fetch() {

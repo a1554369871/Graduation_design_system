@@ -293,7 +293,7 @@ def admin_send_notification():
 @role_required('admin')
 def admin_all_notifications():
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
 
     pagination = Notification.query.filter_by(
         sender_type='admin'

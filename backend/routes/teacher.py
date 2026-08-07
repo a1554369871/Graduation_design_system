@@ -347,7 +347,7 @@ def withdraw_review(review_id):
 def review_history():
     teacher_id = get_teacher_id(get_jwt_identity())
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
 
     pagination = Review.query.filter_by(reviewer_id=teacher_id).order_by(
         Review.created_at.desc()

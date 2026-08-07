@@ -171,6 +171,7 @@ def get_me():
         admin = Admin.query.filter_by(user_id=user.id).first()
         if admin:
             user_info.update(admin.to_dict())
+    user_info['id'] = user.id
 
     return jsonify(user_info), 200
 

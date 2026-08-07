@@ -73,7 +73,7 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref(null)
-const query = reactive({ role: '', keyword: '', page: 1, per_page: 20 })
+const query = reactive({ role: '', keyword: '', page: 1, per_page: 10 })
 const form = reactive({ username: '', name: '', role: 'student', student_id: '', teacher_id: '', password: '123456', class_name: '', department: '', major: '', title: '', email: '', phone: '', is_active: true })
 const rules = { username: [{ required: true, message: '必填' }], name: [{ required: true, message: '必填' }], role: [{ required: true, message: '必填' }] }
 
